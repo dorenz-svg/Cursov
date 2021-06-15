@@ -43,7 +43,10 @@ namespace Service
         /// <returns></returns>
         public static bool SearchCycles(List<Rule> rules)
         {
-            DeleteUnattainable(rules);
+            //делаем грамматику приведенной
+            rules=DeleteEmptyTerminal(rules);
+            rules=DeleteUnattainable(rules);
+
             for (int i = 0; i < rules.Count; i++)
             {
                 List<string> result = new List<string>() { rules[i].Name };
@@ -65,7 +68,83 @@ namespace Service
                 }
             }
             return false;
-        }  
+        }
+        private static List<Rule> DeleteEmptyTerminal(List<Rule> rules)
+        {
+            List<string> temp= (from x in rules
+                       from y in x.Rules
+                       where y.IsLower()
+                       select x.Name).ToList();
+            bool f = true;
+            while (f)
+            {
+                f = false;
+                for (int i = 0; i < rules.Count; i++)
+                {
+                    if (temp.Any(x => x == rules[i].Name))
+                        break;
+                    for (int j = 0; j < rules[i].Rules.Count; j++)
+                    {
+                        if (CheckEmpty(rules[i].Rules[j], temp))
+                        {
+                            temp.Add(rules[i].Name);
+                            f = true;
+                            break;
+                        }
+                    }
+                    if (f) break;                        
+                }
+            }
+            List<string> temp2 = new List<string>();
+            for (int i = 0; i < rules.Count; i++)
+            {
+                 f = false;
+                for (int j = 0; j < temp.Count; j++)
+                {
+                    if (rules[i].Name == temp[j])
+                        f = true;
+                }
+                if (!f)
+                    temp2.Add(rules[i].Name);
+            }
+            rules = (from x in rules
+                    from y in temp
+                    where x.Name==y
+                    select x).ToList();
+            for (int i = 0; i < rules.Count; i++)
+            {
+                for (int j = 0; j < rules[i].Rules.Count(); j++)
+                {
+                    for (int k = 0; k < temp2.Count && j < rules[i].Rules.Count(); k++)
+                    {
+                        if (rules[i].Rules[j].Contains(temp2[k]))
+                            rules[i].Rules.RemoveAt(j);
+                    }
+                }
+            }
+            return rules;
+        }
+        public static bool CheckEmpty(string str,List<string>temp)
+        {
+            for (int i = 0; i < str.Length; i++)
+            {
+                bool f = false;
+                if (Char.IsLower(str[i]))
+                    continue;
+                else {
+                    for (int j = 0; j < temp.Count; j++)
+                    {
+                        if (str[i] == char.Parse(temp[j]))
+                        {
+                            f = true;
+                        }
+                    }
+                    if (!f)
+                        return false;
+                }
+            }
+            return true;
+        }
         /// <summary>
         /// основная функция поиска максимального пути
         /// </summary>
@@ -102,7 +181,7 @@ namespace Service
         /// удаление не достижимых нетерминалов
         /// </summary>
         /// <param name="rules"></param>
-        private static void DeleteUnattainable(List<Rule> rules)
+        private static List<Rule> DeleteUnattainable(List<Rule> rules)
         {
             List<string> result = new List<string>() { rules[0].Name };
             List<string> visited = new List<string>();
@@ -122,7 +201,7 @@ namespace Service
                 }
                 result = temp;             
             }
-            rules = (from x in rules
+            return (from x in rules
                     from y in visited
                     where x.Name == y
                     select x).ToList();
