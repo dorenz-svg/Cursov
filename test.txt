@@ -1,0 +1,9 @@
+S-Ab|aA|BaBa
+A-Ba|Ca
+B-Ca
+C-b
+
+S-Ab|Ba|BaBa
+A-b
+B-Ca
+C-Ba

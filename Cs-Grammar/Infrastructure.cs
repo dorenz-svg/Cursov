@@ -69,33 +69,39 @@ namespace Service
             }
             return false;
         }
+        /// <summary>
+        /// удаление пусых нетерминалов
+        /// </summary>
+        /// <param name="rules"></param>
+        /// <returns></returns>
         private static List<Rule> DeleteEmptyTerminal(List<Rule> rules)
         {
             List<string> temp= (from x in rules
                        from y in x.Rules
                        where y.IsLower()
-                       select x.Name).ToList();
-            bool f = true;
-            while (f)
+                       select x.Name).ToList(); //находим нетерминалы порождающие терминалы
+            int count;
+            do
             {
-                f = false;
-                for (int i = 0; i < rules.Count; i++)
+                List<string> iter = new List<string>();                
+                count = temp.Count();
+                for (int i = 0; i < rules.Count; i++)//итерируемся по правилам
                 {
-                    if (temp.Any(x => x == rules[i].Name))
+                    if (temp.Any(x => x == rules[i].Name))//пропускаем правила которые уже есть в множестве N
                         break;
-                    for (int j = 0; j < rules[i].Rules.Count; j++)
+                    for (int j = 0; j < rules[i].Rules.Count; j++)//итерируемся по кол-ву правил для определенного нетерминала
                     {
-                        if (CheckEmpty(rules[i].Rules[j], temp))
+                        if (CheckEmpty(rules[i].Rules[j], temp))//если нетерминал выводим только из нетерминалов принадлежащих множеству N или терминалов
                         {
-                            temp.Add(rules[i].Name);
-                            f = true;
+                            iter.Add(rules[i].Name); //то добавляем его в множество N
                             break;
                         }
-                    }
-                    if (f) break;                        
+                    }                  
                 }
-            }
-            List<string> temp2 = new List<string>();
+                temp = temp.Union(iter).Distinct().ToList();
+            } while (count!=temp.Count);//итерируемся пока множество N не будет меняться
+            bool f = true;
+            List<string> temp2 = new List<string>();//массив нетерминалов которые необходимо удалить
             for (int i = 0; i < rules.Count; i++)
             {
                  f = false;
@@ -110,21 +116,30 @@ namespace Service
             rules = (from x in rules
                     from y in temp
                     where x.Name==y
-                    select x).ToList();
+                    select x).ToList();//удаление правил нетерминалов которые нужно удалить
             for (int i = 0; i < rules.Count; i++)
             {
                 for (int j = 0; j < rules[i].Rules.Count(); j++)
                 {
                     for (int k = 0; k < temp2.Count && j < rules[i].Rules.Count(); k++)
                     {
-                        if (rules[i].Rules[j].Contains(temp2[k]))
+                        if (rules[i].Rules[j].Contains(temp2[k]))//если правило для нетерминала содержит нетерминал который нужно удалить то удаляем это правило
+                        {
                             rules[i].Rules.RemoveAt(j);
+                            j--;
+                        }
                     }
                 }
             }
             return rules;
         }
-        public static bool CheckEmpty(string str,List<string>temp)
+        /// <summary>
+        /// проверка на выводимость 
+        /// </summary>
+        /// <param name="str"></param>
+        /// <param name="temp"></param>
+        /// <returns></returns>
+        private static bool CheckEmpty(string str,List<string>temp)
         {
             for (int i = 0; i < str.Length; i++)
             {
@@ -217,7 +232,7 @@ namespace Service
             return temp.Any(x=>x.Contains(neTerminal) && x.CountTerminal());
         }
         /// <summary>
-        /// вспомогательная функция заменяет нетерминао на все правила
+        /// вспомогательная функция заменяет нетерминал на все правила
         /// </summary>
         /// <param name="rules"></param>
         /// <param name="word"></param>
