@@ -52,7 +52,7 @@ namespace Cursov
             this.textBox2.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.textBox2.Location = new System.Drawing.Point(455, 73);
             this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(276, 29);
+            this.textBox2.Size = new System.Drawing.Size(425, 29);
             this.textBox2.TabIndex = 10;
             // 
             // label2

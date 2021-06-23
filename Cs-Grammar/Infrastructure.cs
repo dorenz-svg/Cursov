@@ -36,6 +36,14 @@ namespace Service
             }
             return res;
         }
+        public static List<Rule> Normalize(List<Rule> rules)
+        {
+            rules = DeleteEmptyTerminal(rules);
+            if (rules.Count == 0)
+                return rules;
+            rules = DeleteUnattainable(rules);
+            return rules;
+        }
         /// <summary>
         /// функция поиска циклов
         /// </summary>
@@ -43,10 +51,6 @@ namespace Service
         /// <returns></returns>
         public static bool SearchCycles(List<Rule> rules)
         {
-            //делаем грамматику приведенной
-            rules=DeleteEmptyTerminal(rules);
-            rules=DeleteUnattainable(rules);
-
             for (int i = 0; i < rules.Count; i++)
             {
                 List<string> result = new List<string>() { rules[i].Name };
@@ -76,14 +80,14 @@ namespace Service
         /// <returns></returns>
         private static List<Rule> DeleteEmptyTerminal(List<Rule> rules)
         {
-            List<string> temp= (from x in rules
-                       from y in x.Rules
-                       where y.IsLower()
-                       select x.Name).ToList(); //находим нетерминалы порождающие терминалы
+            List<string> temp = (from x in rules
+                                 from y in x.Rules
+                                 where y.IsLower()
+                                 select x.Name).ToList(); //находим нетерминалы порождающие терминалы
             int count;
             do
             {
-                List<string> iter = new List<string>();                
+                List<string> iter = new List<string>();
                 count = temp.Count();
                 for (int i = 0; i < rules.Count; i++)//итерируемся по правилам
                 {
@@ -96,15 +100,15 @@ namespace Service
                             iter.Add(rules[i].Name); //то добавляем его в множество N
                             break;
                         }
-                    }                  
+                    }
                 }
                 temp = temp.Union(iter).Distinct().ToList();
-            } while (count!=temp.Count);//итерируемся пока множество N не будет меняться
+            } while (count != temp.Count);//итерируемся пока множество N не будет меняться
             bool f = true;
             List<string> temp2 = new List<string>();//массив нетерминалов которые необходимо удалить
             for (int i = 0; i < rules.Count; i++)
             {
-                 f = false;
+                f = false;
                 for (int j = 0; j < temp.Count; j++)
                 {
                     if (rules[i].Name == temp[j])
@@ -114,9 +118,9 @@ namespace Service
                     temp2.Add(rules[i].Name);
             }
             rules = (from x in rules
-                    from y in temp
-                    where x.Name==y
-                    select x).ToList();//удаление правил нетерминалов которые нужно удалить
+                     from y in temp
+                     where x.Name == y
+                     select x).ToList();//удаление правил нетерминалов которые нужно удалить
             for (int i = 0; i < rules.Count; i++)
             {
                 for (int j = 0; j < rules[i].Rules.Count(); j++)
@@ -139,14 +143,15 @@ namespace Service
         /// <param name="str"></param>
         /// <param name="temp"></param>
         /// <returns></returns>
-        private static bool CheckEmpty(string str,List<string>temp)
+        private static bool CheckEmpty(string str, List<string> temp)
         {
             for (int i = 0; i < str.Length; i++)
             {
                 bool f = false;
                 if (Char.IsLower(str[i]))
                     continue;
-                else {
+                else
+                {
                     for (int j = 0; j < temp.Count; j++)
                     {
                         if (str[i] == char.Parse(temp[j]))
@@ -168,30 +173,48 @@ namespace Service
         public static string FindMaxWord(List<Rule> rules)
         {
             List<string> result = new List<string>() { rules[0].Name };
-            List<string> words = new List<string>();
-            while (!result.All(x=>x.IsLower())) { 
-
-                List<string> temp = new List<string>();
-                for (int j = 0; j < result.Count; j++)
+            List<string> temp3 = (from x in rules
+                                  from y in x.Rules
+                                  where y.IsLower()
+                                  select x.Name).ToList();
+            do
+            {
+                for (int j = 0; j < rules.Count; j++)
                 {
-                    for (int k = 0; k < result[j].Length; k++)
+                    if (temp3.Contains(rules[j].Name) && rules[j].Rules.All(x=>x.IsLower()))
+                        continue;
+                    for (int k = 0; k < rules[j].Rules.Count(); k++)
                     {
-                        if (Char.IsUpper(result[j][k]))
-                            AddChilder(rules, result[j], k, temp);
+                        for (int i = 0; i < rules[j].Rules[k].Length; i++)
+                        {
+                            for (int c = 0; c < temp3.Count(); c++)
+                            {
+                                if (i < rules[j].Rules[k].Length && rules[j].Rules[k][i] == char.Parse(temp3[c]))
+                                {
+                                    var tempString = rules[j].Rules[k].Replace(temp3[c], Word(rules, temp3[c]));
+                                    rules[j].Rules.RemoveAt(k);
+                                    rules[j].Rules.Add(tempString);
+                                    if (!temp3.Contains(rules[j].Name) && rules[j].Rules.All(x => x.IsLower()))
+                                        temp3.Add(rules[j].Name);
+                                }
+                            }
+                        }
+
                     }
                 }
-                result = temp;
-                foreach (var item in result)
-                {
-                    if (item.IsLower())
-                        words.Add(item);
-                }
-            }
-            var temp1 = words.Distinct().Where(x => x.IsNotEpsilon()).Select(x => x = "ε").ToList();
-            var temp2 = words.Distinct().Select(x => x.Replace("ε", "")).ToList();
-            words = temp1.Union(temp2).ToList();
-            return words.Count==0?"слов нет": words.OrderBy(x=>x.Length).Last();
+            } while (rules.Count != temp3.Count);
+            return rules.Count == 0 ? "слов нет" : rules[0].Rules.OrderBy(x => x.Length).Last();
         }
+
+        private static string Word(List<Rule> rules, string v)
+        {
+            var str = (from x in rules
+                       from y in x.Rules
+                       where x.Name == v && y.IsLower()
+                       select y).OrderBy(x => x.Length).Last();
+            return str;
+        }
+
         /// <summary>
         /// удаление не достижимых нетерминалов
         /// </summary>
@@ -207,14 +230,14 @@ namespace Service
                 {
                     for (int k = 0; k < result[a].Length; k++)
                     {
-                        if (Char.IsUpper(result[a][k]) && !visited.Any(x=>x== result[a][k].ToString()))
+                        if (Char.IsUpper(result[a][k]) && !visited.Any(x => x == result[a][k].ToString()))
                         {
                             AddChilder(rules, result[a], k, temp);
                             visited.Add(result[a][k].ToString());
                         }
                     }
                 }
-                result = temp;             
+                result = temp;
             }
             return (from x in rules
                     from y in visited
@@ -227,9 +250,9 @@ namespace Service
         /// <param name="temp"></param>
         /// <param name="neTerminal"></param>
         /// <returns></returns>
-        private static bool Check(List<string>temp,string neTerminal)
+        private static bool Check(List<string> temp, string neTerminal)
         {
-            return temp.Any(x=>x.Contains(neTerminal) && x.CountTerminal());
+            return temp.Any(x => x.Contains(neTerminal) && x.CountTerminal());
         }
         /// <summary>
         /// вспомогательная функция заменяет нетерминал на все правила
@@ -238,7 +261,7 @@ namespace Service
         /// <param name="word"></param>
         /// <param name="index"></param>
         /// <param name="res"></param>
-        private static void AddChilder(List<Rule> rules, string word,int index,List<string> res)
+        private static void AddChilder(List<Rule> rules, string word, int index, List<string> res)
         {
             char letter = word[index];
             word = word.Remove(index, 1);

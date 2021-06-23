@@ -22,10 +22,20 @@ namespace Cursov
             string[] arrstring = textBox1.Text.Replace("\r", "").Split('\n');
             formater(arrstring);
             List<Rule> list = Infrastructure.FillList(arrstring);
+            list = Infrastructure.Normalize(list);
+            if (list.Count == 0)
+            {
+                textBox2.Text = " язык не порождает слов";
+                return;
+            }
             if (!Infrastructure.SearchCycles(list))
-                textBox2.Text = Infrastructure.FindMaxWord(list);
+            {
+                string temp = Infrastructure.FindMaxWord(list);
+                temp = IsNotEpsilon(temp) ? temp = "ε" : temp.Replace("ε", "");
+                textBox2.Text = temp;
+            }
             else
-                textBox2.Text = "Язык бесконечен";
+                textBox2.Text = "Язык бесконечен ";
 
 
         }
@@ -37,6 +47,17 @@ namespace Cursov
                 str[i] = str[i].Replace("-", " ");
                 str[i] = str[i].Replace("|", " ");
             }
+        }
+        public static bool IsNotEpsilon(string value)
+        {
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (value[i] != 'ε')
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }
