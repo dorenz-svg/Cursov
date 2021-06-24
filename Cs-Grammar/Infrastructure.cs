@@ -92,7 +92,7 @@ namespace Service
                 for (int i = 0; i < rules.Count; i++)//итерируемся по правилам
                 {
                     if (temp.Any(x => x == rules[i].Name))//пропускаем правила которые уже есть в множестве N
-                        break;
+                        continue;
                     for (int j = 0; j < rules[i].Rules.Count; j++)//итерируемся по кол-ву правил для определенного нетерминала
                     {
                         if (CheckEmpty(rules[i].Rules[j], temp))//если нетерминал выводим только из нетерминалов принадлежащих множеству N или терминалов
