@@ -181,7 +181,9 @@ namespace Service
             {
                 for (int j = 0; j < rules.Count; j++)
                 {
-                    if (temp3.Contains(rules[j].Name) && rules[j].Rules.All(x=>x.IsLower()))
+                    if (temp3.Contains(rules[j].Name) && rules[j].Rules.All(x=>x.IsLower()) )
+                        continue;
+                    if (!temp3.Contains(rules[j].Name) && CheckFill(temp3, rules))
                         continue;
                     for (int k = 0; k < rules[j].Rules.Count(); k++)
                     {
@@ -204,6 +206,19 @@ namespace Service
                 }
             } while (rules.Count != temp3.Count);
             return rules.Count == 0 ? "слов нет" : rules[0].Rules.OrderBy(x => x.Length).Last();
+        }
+
+        private static bool CheckFill(List<string>temp,List<Rule>rules)
+        {
+            for (int i = 0; i < rules.Count; i++)
+            {
+                for (int j = 0; j < temp.Count; j++)
+                {
+                    if (temp.Contains(rules[i].Name) && !rules[i].Rules.All(x => x.IsLower()))
+                        return true;
+                }
+            }
+            return false;
         }
 
         private static string Word(List<Rule> rules, string v)
