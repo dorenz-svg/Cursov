@@ -44,6 +44,27 @@ namespace Service
             rules = DeleteUnattainable(rules);
             return rules;
         }
+
+        private static List<Rule> DeleteChain(List<Rule> rules)
+        {
+            
+            for (int i = 0; i < rules.Count(); i++)
+            {
+                for (int j = 0; j < rules[i].Rules.Count(); j++)
+                {
+                    for (int k = 0; k < rules.Count(); k++)
+                    {
+                        if (rules[i].Rules[j]==rules[k].Name)
+                        {
+                            rules[i].Rules.Remove(rules[k].Name);
+                            foreach (var c in rules[k].Rules)
+                                rules[i].Rules.Add(c);
+                        }
+                    }
+                }
+            }
+            return rules;
+        }
         /// <summary>
         /// функция поиска циклов
         /// </summary>
@@ -172,6 +193,11 @@ namespace Service
         /// <returns></returns>
         public static string FindMaxWord(List<Rule> rules)
         {
+            rules = DeleteChain(rules);
+            for (int i = 0; i < rules.Count; i++)
+            {
+                rules[i].Rules = rules[i].Rules.Distinct().ToList();
+            }
             List<string> result = new List<string>() { rules[0].Name };
             List<string> temp3 = (from x in rules
                                   from y in x.Rules
@@ -179,9 +205,11 @@ namespace Service
                                   select x.Name).ToList();
             do
             {
+                if (rules[0].Rules.All(x => x.IsLower()))
+                    break;
                 for (int j = 0; j < rules.Count; j++)
                 {
-                    if (temp3.Contains(rules[j].Name) && rules[j].Rules.All(x=>x.IsLower()) )
+                    if (temp3.Contains(rules[j].Name) && rules[j].Rules.All(x => x.IsLower()))
                         continue;
                     if (!temp3.Contains(rules[j].Name) && CheckFill(temp3, rules))
                         continue;
@@ -204,7 +232,7 @@ namespace Service
 
                     }
                 }
-            } while (rules.Count != temp3.Count);
+            } while (rules.Count != temp3.Count ) ;
             return rules.Count == 0 ? "слов нет" : rules[0].Rules.OrderBy(x => x.Length).Last();
         }
 
