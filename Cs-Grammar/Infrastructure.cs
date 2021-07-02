@@ -36,15 +36,24 @@ namespace Service
             }
             return res;
         }
+        /// <summary>
+        /// делаем грамматику приведенной
+        /// </summary>
+        /// <param name="rules"></param>
+        /// <returns></returns>
         public static List<Rule> Normalize(List<Rule> rules)
         {
-            rules = DeleteEmptyTerminal(rules);
+            rules = DeleteEmptyTerminal(rules);//удаляем пустые нетерминалы
             if (rules.Count == 0)
                 return rules;
-            rules = DeleteUnattainable(rules);
+            rules = DeleteUnattainable(rules);// удаляем недостижимые нетерминалы
             return rules;
         }
-
+        /// <summary>
+        /// удаляем цепные правила
+        /// </summary>
+        /// <param name="rules"></param>
+        /// <returns></returns>
         private static List<Rule> DeleteChain(List<Rule> rules)
         {
             
@@ -54,7 +63,7 @@ namespace Service
                 {
                     for (int k = 0; k < rules.Count(); k++)
                     {
-                        if (rules[i].Rules[j]==rules[k].Name)
+                        if (rules[i].Rules[j]==rules[k].Name)//если терминал порождает только один нетерминал то заменяем его на все правила для этого нетерминала
                         {
                             rules[i].Rules.Remove(rules[k].Name);
                             foreach (var c in rules[k].Rules)
@@ -88,7 +97,7 @@ namespace Service
                         }
                     }
                     result = temp;
-                    if (Check(temp, neTerminal))
+                    if (Check(temp, neTerminal,rules))
                         return true;
                 }
             }
@@ -193,7 +202,7 @@ namespace Service
         /// <returns></returns>
         public static string FindMaxWord(List<Rule> rules)
         {
-            rules = DeleteChain(rules);
+            rules = DeleteChain(rules);//удаляем цепные правила
             for (int i = 0; i < rules.Count; i++)
             {
                 rules[i].Rules = rules[i].Rules.Distinct().ToList();
@@ -202,16 +211,14 @@ namespace Service
             List<string> temp3 = (from x in rules
                                   from y in x.Rules
                                   where y.IsLower()
-                                  select x.Name).ToList();
+                                  select x.Name).ToList();//нетерминалы которые порождают терминалы
             do
             {
-                if (rules[0].Rules.All(x => x.IsLower()))
+                if (rules[0].Rules.All(x => x.IsLower()))// если в S все правила порождают терминалы то выходим из цикла
                     break;
                 for (int j = 0; j < rules.Count; j++)
                 {
-                    if (temp3.Contains(rules[j].Name) && rules[j].Rules.All(x => x.IsLower()))
-                        continue;
-                    if (!temp3.Contains(rules[j].Name) && CheckFill(temp3, rules))
+                    if (temp3.Contains(rules[j].Name) && rules[j].Rules.All(x => x.IsLower()))//если нетерминал порождает только терминалы то проходим дальше
                         continue;
                     for (int k = 0; k < rules[j].Rules.Count(); k++)
                     {
@@ -219,12 +226,12 @@ namespace Service
                         {
                             for (int c = 0; c < temp3.Count(); c++)
                             {
-                                if (i < rules[j].Rules[k].Length && rules[j].Rules[k][i] == char.Parse(temp3[c]))
+                                if (i < rules[j].Rules[k].Length && rules[j].Rules[k][i] == char.Parse(temp3[c]))//если в правиле есть терминал из массива temp3 то заменяем его на терминальное слово наибольшей длины
                                 {
                                     var tempString = rules[j].Rules[k].Replace(temp3[c], Word(rules, temp3[c]));
                                     rules[j].Rules.RemoveAt(k);
                                     rules[j].Rules.Add(tempString);
-                                    if (!temp3.Contains(rules[j].Name) && rules[j].Rules.All(x => x.IsLower()))
+                                    if (!temp3.Contains(rules[j].Name) && rules[j].Rules.All(x => x.IsLower()))//если для нетерминала все правила теперь порождают терминальные слова то добавляем нетерминал в массив temp3
                                         temp3.Add(rules[j].Name);
                                 }
                             }
@@ -232,23 +239,17 @@ namespace Service
 
                     }
                 }
-            } while (rules.Count != temp3.Count ) ;
+            } while (rules.Count != temp3.Count ) ;//итерируемся пока все правила не будут порождать терминальные слова
             return rules.Count == 0 ? "слов нет" : rules[0].Rules.OrderBy(x => x.Length).Last();
         }
 
-        private static bool CheckFill(List<string>temp,List<Rule>rules)
-        {
-            for (int i = 0; i < rules.Count; i++)
-            {
-                for (int j = 0; j < temp.Count; j++)
-                {
-                    if (temp.Contains(rules[i].Name) && !rules[i].Rules.All(x => x.IsLower()))
-                        return true;
-                }
-            }
-            return false;
-        }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="rules"></param>
+        /// <param name="v"></param>
+        /// <returns></returns>
         private static string Word(List<Rule> rules, string v)
         {
             var str = (from x in rules
@@ -259,7 +260,7 @@ namespace Service
         }
 
         /// <summary>
-        /// удаление не достижимых нетерминалов
+        /// удаление недостижимых нетерминалов
         /// </summary>
         /// <param name="rules"></param>
         private static List<Rule> DeleteUnattainable(List<Rule> rules)
@@ -293,10 +294,39 @@ namespace Service
         /// <param name="temp"></param>
         /// <param name="neTerminal"></param>
         /// <returns></returns>
-        private static bool Check(List<string> temp, string neTerminal)
+        private static bool Check(List<string> temp, string neTerminal,List<Rule> rules)
         {
-            return temp.Any(x => x.Contains(neTerminal) && x.CountTerminal());
+            for (int i = 0; i < temp.Count; i++)
+            {
+                int count = 0;
+                for (int j = 0; j < temp[i].Length; j++)
+                {
+                    if ((temp[i][j]).ToString() == neTerminal)
+                        count++;
+                    if ((temp[i][j]).ToString()== neTerminal && temp[i].CountTerminal() || count>1 && FindTerminal(rules,neTerminal))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+            
         }
+        /// <summary>
+        /// функция определяет порождает ли искомый нетерминал только терминалы
+        /// </summary>
+        /// <param name="rules"></param>
+        /// <param name="neTerminal"></param>
+        /// <returns></returns>
+        private static bool FindTerminal(List<Rule> rules, string neTerminal)
+        {
+            var temp = from x in rules
+                       from y in x.Rules
+                       where x.Name == neTerminal && y.IsLower()
+                       select x;
+            return temp == null ? false : true;
+        }
+
         /// <summary>
         /// вспомогательная функция заменяет нетерминал на все правила
         /// </summary>
