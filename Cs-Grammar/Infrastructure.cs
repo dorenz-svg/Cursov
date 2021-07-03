@@ -113,7 +113,7 @@ namespace Service
             List<string> temp = (from x in rules
                                  from y in x.Rules
                                  where y.IsLower()
-                                 select x.Name).ToList(); //находим нетерминалы порождающие терминалы
+                                 select x.Name).Distinct().ToList(); //находим нетерминалы порождающие терминалы
             int count;
             do
             {
@@ -211,7 +211,7 @@ namespace Service
             List<string> temp3 = (from x in rules
                                   from y in x.Rules
                                   where y.IsLower()
-                                  select x.Name).ToList();//нетерминалы которые порождают терминалы
+                                  select x.Name).Distinct().ToList();//нетерминалы которые порождают терминалы
             do
             {
                 if (rules[0].Rules.All(x => x.IsLower()))// если в S все правила порождают терминалы то выходим из цикла
